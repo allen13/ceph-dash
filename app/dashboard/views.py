@@ -12,6 +12,7 @@ from flask.views import MethodView
 
 from rados import Rados
 from rados import Error as RadosError
+import rbd
 
 from app.base import ApiResource
 
@@ -89,6 +90,14 @@ def get_unhealthy_osd_details(osd_status):
 
     return unhealthy_osds
 
+def get_rbd_images():
+    rbd_images = []
+    with Rados(conffile='/etc/ceph/ceph.conf') as cluster:
+        with cluster.open_ioctx('rbd') as ioctx:
+            rbd_inst = rbd.RBD()
+            rbd_images = [ {'name': rbd_image } for rbd_image in rbd_inst.list(ioctx) ]
+
+    return rbd_images
 
 class DashboardResource(ApiResource):
     """
@@ -118,6 +127,7 @@ class DashboardResource(ApiResource):
             total_osds = cluster_status['osdmap']['osdmap']['num_osds']
             in_osds = cluster_status['osdmap']['osdmap']['num_up_osds']
             up_osds = cluster_status['osdmap']['osdmap']['num_in_osds']
+            cluster_status['rbd_images'] = get_rbd_images()
 
             if up_osds < total_osds or in_osds < total_osds:
                 osd_status = CephClusterCommand(cluster, prefix='osd tree', format='json')
