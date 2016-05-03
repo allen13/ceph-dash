@@ -125,7 +125,7 @@
             <thead> <tr> <th>Volume</th> <th> Ceph Cluster </th> <th> OS Project </th> <th> OS PV Bound </th></tr> </thead>
             <tbody>
               {% for rbd_image in data['rbd_images'] %}
-                <tr> <td>{{ rbd_image['name'] }}</td> <td>mex01</td> <td>tacolayer</td> <td> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> </td> </tr>
+                <tr> <td>{{ rbd_image['name'] }}</td> <td>{{ rbd_image['cluster_name'] }}</td> <td>tacolayer</td> <td> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> </td> </tr>
               {% endfor %}
             </tbody>
             </table>

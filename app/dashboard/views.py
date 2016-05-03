@@ -2,6 +2,8 @@
 # -*- coding: UTF-8 -*-
 
 import json
+import glob
+import os
 
 from flask import request
 from flask import render_template
@@ -15,41 +17,6 @@ from rados import Error as RadosError
 import rbd
 
 from app.base import ApiResource
-
-
-class CephClusterProperties(dict):
-    """
-    Validate ceph cluster connection properties
-    """
-
-    def __init__(self, config):
-        dict.__init__(self)
-
-        self['conffile'] = config['ceph_config']
-        self['conf'] = dict()
-
-        if 'keyring' in config:
-            self['conf']['keyring'] = config['keyring']
-        if 'client_id' in config and 'client_name' in config:
-            raise RadosError("Can't supply both client_id and client_name")
-        if 'client_id' in config:
-            self['rados_id'] = config['client_id']
-        if 'client_name' in config:
-            self['name'] = config['client_name']
-
-
-class CephClusterCommand(dict):
-    """
-    Issue a ceph command on the given cluster and provide the returned json
-    """
-
-    def __init__(self, cluster, **kwargs):
-        dict.__init__(self)
-        ret, buf, err = cluster.mon_command(json.dumps(kwargs), '', timeout=5)
-        if ret != 0:
-            self['err'] = err
-        else:
-            self.update(json.loads(buf))
 
 
 def find_host_for_osd(osd, osd_status):
@@ -90,14 +57,51 @@ def get_unhealthy_osd_details(osd_status):
 
     return unhealthy_osds
 
-def get_rbd_images():
+def get_rbd_images(ceph_pool = 'rbd'):
+    """
+    Grab a list of rbd images in a pool
+    """
+
     rbd_images = []
-    with Rados(conffile='/etc/ceph/ceph.conf') as cluster:
-        with cluster.open_ioctx('rbd') as ioctx:
-            rbd_inst = rbd.RBD()
-            rbd_images = [ {'name': rbd_image } for rbd_image in rbd_inst.list(ioctx) ]
+    for cluster_name, cluster_config in get_ceph_clusters().iteritems():
+        with Rados(**cluster_config) as cluster:
+            with cluster.open_ioctx(ceph_pool) as ioctx:
+                rbd_inst = rbd.RBD()
+                rbd_images = [ {'name': rbd_image, 'cluster_name': cluster_name } for rbd_image in rbd_inst.list(ioctx) ]
 
     return rbd_images
+
+
+def get_ceph_clusters():
+    """
+    Grab dictionary of ceph clusters from the config directory specified in
+    config.json
+    """
+
+    config_path = current_app.config['USER_CONFIG']['config_path']
+    ceph_clusters = dict()
+    for config_file in glob.glob(config_path + '*.conf'):
+        cluster_name = os.path.basename(os.path.splitext(config_file)[0])
+        ceph_clusters[cluster_name] = dict()
+        ceph_clusters[cluster_name]['conffile'] = config_path + cluster_name + '.conf'
+        ceph_clusters[cluster_name]['conf'] = dict(keyring = config_path + cluster_name + '.keyring')
+
+    return ceph_clusters
+
+
+class CephClusterCommand(dict):
+    """
+    Issue a ceph command on the given cluster and provide the returned json
+    """
+
+    def __init__(self, cluster, **kwargs):
+        dict.__init__(self)
+        ret, buf, err = cluster.mon_command(json.dumps(kwargs), '', timeout=5)
+        if ret != 0:
+            self['err'] = err
+        else:
+            self.update(json.loads(buf))
+
 
 class DashboardResource(ApiResource):
     """
@@ -115,7 +119,7 @@ class DashboardResource(ApiResource):
     def __init__(self):
         MethodView.__init__(self)
         self.config = current_app.config['USER_CONFIG']
-        self.clusterprop = CephClusterProperties(self.config)
+        self.clusterprop = get_ceph_clusters().itervalues().next()
 
     def get(self):
         with Rados(**self.clusterprop) as cluster:
@@ -136,6 +140,36 @@ class DashboardResource(ApiResource):
 
                 # find unhealthy osds in osd tree
                 cluster_status['osdmap']['details'] = get_unhealthy_osd_details(osd_status)
+
+            if request.mimetype == 'application/json':
+                return jsonify(cluster_status)
+            else:
+                return render_template('status.html', data=cluster_status, config=self.config)
+
+
+class VolumesResource(ApiResource):
+    """
+    Endpoint that shows overall cluster status
+    """
+
+    endpoint = 'volumes'
+    url_prefix = '/volumes'
+    url_rules = {
+        'index': {
+            'rule': '/volumes',
+        }
+    }
+
+    def __init__(self):
+        MethodView.__init__(self)
+        self.config = current_app.config['USER_CONFIG']
+        self.clusterprop = get_ceph_clusters().itervalues().next()
+
+    def get(self):
+        with Rados(**self.clusterprop) as cluster:
+            cluster_status = CephClusterCommand(cluster, prefix='status', format='json')
+            if 'err' in cluster_status:
+                abort(500, cluster_status['err'])
 
             if request.mimetype == 'application/json':
                 return jsonify(cluster_status)
