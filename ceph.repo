@@ -1,0 +1,8 @@
+[ceph]
+name=Ceph noarch packages
+#baseurl=http://169.57.18.182:8888/ceph-repo/
+baseurl=http://download.ceph.com/rpm-infernalis/el7/x86_64
+enabled=1
+gpgcheck=1
+type=rpm-md
+gpgkey=https://download.ceph.com/keys/release.asc
