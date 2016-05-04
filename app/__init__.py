@@ -8,7 +8,7 @@ from os.path import join
 from flask import Flask
 
 from app.dashboard.views import DashboardResource
-
+from app.volumes.views import VolumesResource
 app = Flask(__name__)
 app.template_folder = join(dirname(__file__), 'templates')
 app.static_folder = join(dirname(__file__), 'static')
@@ -59,3 +59,4 @@ if 'graphite' in app.config['USER_CONFIG']:
 
 # load dashboard and graphite endpoint
 app.register_blueprint(DashboardResource.as_blueprint())
+app.register_blueprint(VolumesResource.as_blueprint())

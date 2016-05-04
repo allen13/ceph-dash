@@ -57,20 +57,6 @@ def get_unhealthy_osd_details(osd_status):
 
     return unhealthy_osds
 
-def get_rbd_images(ceph_pool = 'rbd'):
-    """
-    Grab a list of rbd images in a pool
-    """
-
-    rbd_images = []
-    for cluster_name, cluster_config in get_ceph_clusters().iteritems():
-        with Rados(**cluster_config) as cluster:
-            with cluster.open_ioctx(ceph_pool) as ioctx:
-                rbd_inst = rbd.RBD()
-                rbd_images = [ {'name': rbd_image, 'cluster_name': cluster_name } for rbd_image in rbd_inst.list(ioctx) ]
-
-    return rbd_images
-
 
 def get_ceph_clusters():
     """
@@ -131,7 +117,6 @@ class DashboardResource(ApiResource):
             total_osds = cluster_status['osdmap']['osdmap']['num_osds']
             in_osds = cluster_status['osdmap']['osdmap']['num_up_osds']
             up_osds = cluster_status['osdmap']['osdmap']['num_in_osds']
-            cluster_status['rbd_images'] = get_rbd_images()
 
             if up_osds < total_osds or in_osds < total_osds:
                 osd_status = CephClusterCommand(cluster, prefix='osd tree', format='json')
@@ -140,36 +125,6 @@ class DashboardResource(ApiResource):
 
                 # find unhealthy osds in osd tree
                 cluster_status['osdmap']['details'] = get_unhealthy_osd_details(osd_status)
-
-            if request.mimetype == 'application/json':
-                return jsonify(cluster_status)
-            else:
-                return render_template('status.html', data=cluster_status, config=self.config)
-
-
-class VolumesResource(ApiResource):
-    """
-    Endpoint that shows overall cluster status
-    """
-
-    endpoint = 'volumes'
-    url_prefix = '/volumes'
-    url_rules = {
-        'index': {
-            'rule': '/volumes',
-        }
-    }
-
-    def __init__(self):
-        MethodView.__init__(self)
-        self.config = current_app.config['USER_CONFIG']
-        self.clusterprop = get_ceph_clusters().itervalues().next()
-
-    def get(self):
-        with Rados(**self.clusterprop) as cluster:
-            cluster_status = CephClusterCommand(cluster, prefix='status', format='json')
-            if 'err' in cluster_status:
-                abort(500, cluster_status['err'])
 
             if request.mimetype == 'application/json':
                 return jsonify(cluster_status)

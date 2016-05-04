@@ -97,94 +97,6 @@
     </div>
     <!--END CEPH OSD STATUS-->
 
-    <!--START CEPH VOLUMES-->
-    <div class="panel panel-primary">
-      <div class="panel-heading cd-collapsable">
-        <h3 class="panel-title">
-          Ceph Volumes
-        </h3>
-      </div>
-      <div class="panel-body" align="center">
-
-        <!--here we add warnings about nearfull / full osds-->
-        <div id="osd_warning"></div>
-        <div class="row">
-
-          <div class="col-md-12">
-            <div class="panel panel-default">
-              <div class="panel-body">
-                <button type="button" class="btn btn-default" data-toggle="modal" data-target="#createVolume" >Create Volume</button>
-              </div>
-            </div>
-          </div>
-
-        </div>
-        <div class="row">
-          <div class="col-md-12">
-            <table class="table table-bordered">
-            <thead> <tr> <th>Volume</th> <th> Ceph Cluster </th> <th> OS Project </th> <th> OS PV Bound </th></tr> </thead>
-            <tbody>
-              {% for rbd_image in data['rbd_images'] %}
-                <tr> <td>{{ rbd_image['name'] }}</td> <td>{{ rbd_image['cluster_name'] }}</td> <td>tacolayer</td> <td> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> </td> </tr>
-              {% endfor %}
-            </tbody>
-            </table>
-          </div>
-
-        </div>
-
-      </div>
-    </div>
-    <div class="modal fade" id="createVolume" tabindex="-1" role="dialog" aria-labelledby="createVolume">
-
-    <div class="modal-dialog" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-          <h4 class="modal-title" id="myModalLabel">Create Volume</h4>
-        </div>
-        <div class="modal-body">
-          <form id="createVolumeForm">
-
-            <div class="form-group">
-              <label for="volumeName">Volume Name</label>
-              <input type="text" class="form-control" id="volumeName" placeholder="Volume Name">
-            </div>
-
-            <div class="form-group">
-              <label for="volumeSize">Volume Size (GB)</label>
-              <input type="number" class="form-control" id="volumeSize" value="100">
-            </div>
-
-            <div class="form-group">
-              <label for="clusterSelect">Ceph Cluster</label>
-              <br/>
-              <select id="clusterSelect" name="cluster" form="createVolumeForm" class="selectpicker">
-                <option value="mex01">mex01</option>
-                <option value="mon01">mon01</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="clusterSelect">Openshift Project</label>
-              <br/>
-              <select id="clusterSelect" name="project" form="createVolumeForm" class="selectpicker">
-                <option value="tacolayer">tacolayer</option>
-                <option value="openshift-infra">openshift-infra</option>
-              </select>
-            </div>
-
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary">Create</button>
-        </div>
-      </div>
-    </div>
-  </div>
-    <!--END CEPH VOLUMES -->
-
     <!--START GRAPHITE METRICS-->
     {% if "graphite" in config or "influxdb" in config %}
     <div class="panel panel-primary">
@@ -210,7 +122,6 @@
     </div>
     {% endif %}
     <!--END CEPH OSD STATUS-->
-
 
     <!--START CEPH PLACEMENTGROUP STATUS-->
     <div class="panel panel-primary">
