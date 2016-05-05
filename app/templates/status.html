@@ -196,5 +196,8 @@
   <!--END CEPH PLACEMENTGROUP STATUS-->
 
 </div>
-<script type="text/javascript" src="{{ url_for('static', filename='js/ceph.dash.js') }}"></script>
 {%- endblock content %}
+
+{% block js -%}
+<script type="text/javascript" src="{{ url_for('static', filename='js/ceph.dash.js') }}"></script>
+{%- endblock js %}
