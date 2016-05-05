@@ -160,6 +160,6 @@ class VolumesResource(ApiResource):
         page_data['rbd_images'] = get_ceph_openshift_volumes()
 
         if request.mimetype == 'application/json':
-            return jsonify(cluster_status)
+            return jsonify(page_data)
         else:
             return render_template('volumes.html', data=page_data, config=get_ceph_clusters())
