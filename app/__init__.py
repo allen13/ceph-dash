@@ -6,9 +6,11 @@ import json
 from os.path import dirname
 from os.path import join
 from flask import Flask
+from flask import jsonify
 
 from app.dashboard.views import DashboardResource
 from app.volumes.views import VolumesResource
+from app.base import ApiResource
 app = Flask(__name__)
 app.template_folder = join(dirname(__file__), 'templates')
 app.static_folder = join(dirname(__file__), 'static')
@@ -60,3 +62,17 @@ if 'graphite' in app.config['USER_CONFIG']:
 # load dashboard and graphite endpoint
 app.register_blueprint(DashboardResource.as_blueprint())
 app.register_blueprint(VolumesResource.as_blueprint())
+
+class HealthResource(ApiResource):
+    endpoint = 'health'
+    url_prefix = '/health'
+    url_rules = {
+        'index': {
+            'rule': '/',
+        }
+    }
+
+    def get(self):
+        return jsonify({'health': 'ok'})
+
+app.register_blueprint(HealthResource.as_blueprint())
