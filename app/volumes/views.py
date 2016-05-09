@@ -11,7 +11,6 @@ import dpath
 from flask import request
 from flask import render_template
 from flask import abort
-from flask import jsonify
 from flask import current_app
 from flask.views import MethodView
 
@@ -104,6 +103,16 @@ def get_openshift_pvs():
     return openshift_pvs
 
 
+def get_openshift_projects():
+    """
+    Returns a list of openshift projects
+    """
+
+    openshift_projects = json.loads(subprocess.check_output(["oc", "get", "projects", "-o" "json"]))['items']
+
+    return [ project['metadata']['name'] for project in openshift_projects ]
+
+
 def get_ceph_openshift_volumes(ceph_pool = 'rbd'):
     """
     Matches ceph volumes with openshift persistent volumes and returns a dict
@@ -162,4 +171,10 @@ class VolumesResource(ApiResource):
         if request.mimetype == 'application/json':
             return jsonify(page_data)
         else:
-            return render_template('volumes.html', data=page_data, config=get_ceph_clusters())
+            return render_template(
+                'volumes.html',
+                data=page_data,
+                config=get_ceph_clusters(),
+                projects=get_openshift_projects(),
+                clusters=get_ceph_clusters
+            )

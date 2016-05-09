@@ -6,11 +6,13 @@ import json
 from os.path import dirname
 from os.path import join
 from flask import Flask
-from flask import jsonify
 
 from app.dashboard.views import DashboardResource
 from app.volumes.views import VolumesResource
+from app.health.views import HealthResource
 from app.base import ApiResource
+
+
 app = Flask(__name__)
 app.template_folder = join(dirname(__file__), 'templates')
 app.static_folder = join(dirname(__file__), 'static')
@@ -36,43 +38,6 @@ class UserConfig(dict):
 
 app.config['USER_CONFIG'] = UserConfig()
 
-# only load influxdb endpoint if module is available
-try:
-    import influxdb
-    assert influxdb
-except ImportError:
-    # remove influxdb config because we can't use it
-    if 'influxdb' in app.config['USER_CONFIG']:
-        del app.config['USER_CONFIG']['influxdb']
-
-    # log something so the user knows what's up
-    # TODO: make logging work!
-    app.logger.warning('No influxdb module found, disabling influxdb support')
-else:
-    # only load endpoint if user wants to use influxdb
-    if 'influxdb' in app.config['USER_CONFIG']:
-        from app.influx.views import InfluxResource
-        app.register_blueprint(InfluxResource.as_blueprint())
-
-# only load endpoint if user wants to use graphite
-if 'graphite' in app.config['USER_CONFIG']:
-    from app.graphite.views import GraphiteResource
-    app.register_blueprint(GraphiteResource.as_blueprint())
-
-# load dashboard and graphite endpoint
 app.register_blueprint(DashboardResource.as_blueprint())
 app.register_blueprint(VolumesResource.as_blueprint())
-
-class HealthResource(ApiResource):
-    endpoint = 'health'
-    url_prefix = '/health'
-    url_rules = {
-        'index': {
-            'rule': '/',
-        }
-    }
-
-    def get(self):
-        return jsonify({'health': 'ok'})
-
 app.register_blueprint(HealthResource.as_blueprint())
